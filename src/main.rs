@@ -4,7 +4,7 @@ mod domain;
 mod services;
 mod sources;
 mod ui;
-mod utils;
+
 
 use services::aggregator::Aggregator;
 use sources::rss::RssSource;

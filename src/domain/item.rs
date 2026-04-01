@@ -11,7 +11,7 @@ pub struct Item {
     pub author: Option<String>,
     pub tags: Vec<String>,
     pub is_read: bool,
-    pub content: Option<String>,
+    // pub content: Option<String>,
 }
 
 impl Item {
@@ -20,7 +20,7 @@ impl Item {
         title: String,
         url: String,
         source: SourceKind,
-        content : String,
+        // content : String,
         created_at: DateTime<Utc>,
     ) -> Self {
         Self {
@@ -29,10 +29,10 @@ impl Item {
             url,
             source,
             created_at,
+            // content : None,
             score: None,
             author: None,
             tags: vec![],
-            content,
             is_read: false,
         }
     }

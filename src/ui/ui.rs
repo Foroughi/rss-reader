@@ -37,6 +37,11 @@ impl Ui {
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => break,
+                    KeyCode::Char('o') => {
+                        if let Some(item) = self.items.get(self.selected) {
+                         let _ = open::that(&item.url);
+                      }
+                    }
 
                     KeyCode::Down => {
                         if self.selected + 1 < self.items.len() {
@@ -61,15 +66,19 @@ impl Ui {
     }
 
     fn draw(&self, f: &mut Frame) {
-        let items: Vec<ListItem> = self
-            .items
-            .iter()
-            .map(|i| ListItem::new(i.title.clone()))
-            .collect();
+        let items: Vec<ListItem> = self.items.iter().map(|i| {
+            let line = format!(
+                "[{:?}] ({}) {}",
+                i.source,
+                i.score.unwrap_or(0),
+                i.title
+            );
+            ListItem::new(line)
+        }).collect();
 
         let list = List::new(items)
             .block(Block::default().title("RSS Hub").borders(Borders::ALL))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_style(Style::default().bg(Color::Blue).fg(Color::White).add_modifier(Modifier::BOLD))
             .highlight_symbol(">> ");
 
         let mut state = ListState::default();

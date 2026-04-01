@@ -1,6 +1,6 @@
 use crate::domain::item::Item;
 use crate::sources::source::Source;
-
+use std::collections::HashMap;
 use futures::future::join_all;
 
 pub struct Aggregator {
@@ -19,20 +19,51 @@ impl Aggregator {
     }
 
     pub async fn fetch_all(&self) -> Vec<Item> {
-        let futures = self.sources.iter().map(|source| source.fetch());
+        let futures = self.sources.iter().map(|s| s.fetch());
+        let results = futures::future::join_all(futures).await;
 
-        let results = join_all(futures).await;
-
-        let mut items = Vec::new();
+        let mut map: HashMap<String, Item> = HashMap::new();
 
         for result in results {
             match result {
-                Ok(mut fetched) => items.append(&mut fetched),
+                Ok(items) => {
+                    for item in items {
+                        let key = item.url.clone();
+
+                        map.entry(key)
+                            .and_modify(|existing| {
+                                // merge score (if both exist)
+                                if let (Some(a), Some(b)) = (existing.score, item.score) {
+                                    existing.score = Some(a + b);
+                                }
+
+                                // merge tags
+                                for tag in &item.tags {
+                                    if !existing.tags.contains(tag) {
+                                        existing.tags.push(tag.clone());
+                                    }
+                                }
+                            })
+                            .or_insert(item);
+                    }
+                }
                 Err(err) => {
                     eprintln!("Error fetching source: {:?}", err);
                 }
             }
         }
+
+        let mut items: Vec<Item> = map.into_values().collect();
+
+        // 🔥 ranking (simple but effective)
+        items.sort_by(|a, b| {
+            let score_a = a.score.unwrap_or(0);
+            let score_b = b.score.unwrap_or(0);
+
+            score_b
+                .cmp(&score_a)
+                .then_with(|| b.created_at.cmp(&a.created_at))
+        });
 
         items
     }

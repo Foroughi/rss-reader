@@ -19,54 +19,56 @@ impl RssSource {
 #[async_trait]
 impl Source for RssSource {
     async fn fetch(&self) -> anyhow::Result<Vec<Item>> {
-        // fetch feed
         let content = reqwest::get(&self.url).await?.bytes().await?;
 
-        // parse RSS
-        let channel = Channel::read_from(&content[..])?;
+        // try RSS first
+        let channel = Channel::read_from(&content[..]);
 
-        let mut items = Vec::new();
+        let items = if let Ok(channel) = channel {
+            channel.items().iter().map(|entry| {
+                // same mapping as before
+                let title = entry.title().unwrap_or("No title").to_string();
+                let url = entry.link().unwrap_or("").to_string();
 
-        for entry in channel.items() {
-            let title = entry.title().unwrap_or("No title").to_string();
-            let url = entry.link().unwrap_or("").to_string();
+                let id = entry.guid()
+                    .map(|g| g.value().to_string())
+                    .unwrap_or_else(|| url.clone());
 
-            if url.is_empty() {
-                continue; // skip broken items
-            }
+                let created_at = entry.pub_date()
+                    .and_then(|d| chrono::DateTime::parse_from_rfc2822(d).ok())
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
+                    .unwrap_or_else(chrono::Utc::now);
 
-            // fallback ID → use link
-            let id = entry
-                .guid()
-                .map(|g| g.value().to_string())
-                .unwrap_or_else(|| url.clone());
+                let mut item = Item::new(id, title, url, SourceKind::Rss, created_at);
 
-            // parse date (optional)
-            let created_at = entry
-                .pub_date()
-                .and_then(|d| DateTime::parse_from_rfc2822(d).ok())
-                .map(|dt| dt.with_timezone(&Utc))
-                .unwrap_or_else(Utc::now);
+                // item.content = entry.description().map(|d| d.to_string());
 
-            let mut item = Item::new(
-                id,
-                title,
-                url,
-                SourceKind::Rss,
-                created_at,
-            );
+                item
+            }).collect()
 
-            // optional content
-            item.content = entry.description().map(|d| d.to_string());
+        } else {
+            // fallback to Atom
+            let feed = atom_syndication::Feed::read_from(&content[..])?;
 
-            // optional tag
-            if let Some(tag) = &self.tag {
-                item.tags.push(tag.clone());
-            }
+            feed.entries().iter().map(|entry| {
+                let title = entry.title().to_string();
+                let url = entry.links().get(0)
+                    .map(|l| l.href.clone())
+                    .unwrap_or_default();
 
-            items.push(item);
-        }
+                let id = entry.id().to_string();
 
+                let created_at = entry.published()
+                    .map(|d| d.with_timezone(&chrono::Utc))
+                    .unwrap_or_else(chrono::Utc::now);
+
+                let mut item = Item::new(id, title, url, SourceKind::Rss, created_at);
+
+                // item.content = entry.summary().map(|s| s.to_string());
+
+                item
+            }).collect()
+        };  
         Ok(items)
     }
 
