@@ -1,10 +1,10 @@
 use crate::domain::item::Item;
 use crate::sources::source::Source;
-use std::collections::HashMap;
 use futures::future::join_all;
+use std::collections::HashMap;
 
 pub struct Aggregator {
-    sources: Vec<Box<dyn Source>>,
+    pub sources: Vec<Box<dyn Source>>,
 }
 
 impl Aggregator {
@@ -20,24 +20,27 @@ impl Aggregator {
 
     pub async fn fetch_all(&self) -> Vec<Item> {
         let futures = self.sources.iter().map(|s| s.fetch());
+
         let results = futures::future::join_all(futures).await;
 
         let mut map: HashMap<String, Item> = HashMap::new();
 
-        for result in results {
+        for (source, result) in self.sources.iter().zip(results) {
             match result {
                 Ok(items) => {
                     for item in items {
+                        let mut item = item;
+
+                        item.tags.push(source.tag().to_string());
+
                         let key = item.url.clone();
 
                         map.entry(key)
                             .and_modify(|existing| {
-                                // merge score (if both exist)
                                 if let (Some(a), Some(b)) = (existing.score, item.score) {
                                     existing.score = Some(a + b);
                                 }
 
-                                // merge tags
                                 for tag in &item.tags {
                                     if !existing.tags.contains(tag) {
                                         existing.tags.push(tag.clone());
