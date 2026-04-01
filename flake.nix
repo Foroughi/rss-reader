@@ -14,9 +14,8 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
-            rustup
+            rustc
             rust-analyzer
-
             pkg-config
             openssl
             sqlite

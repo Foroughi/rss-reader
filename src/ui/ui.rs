@@ -3,9 +3,14 @@ use std::io;
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{prelude::*, widgets::*};
+
+use crate::ui::{
+    components::{header, main, sidebar, statusbar},
+    layout::create_layout,
+};
 
 use crate::domain::item::Item;
 
@@ -16,10 +21,7 @@ pub struct Ui {
 
 impl Ui {
     pub fn new(items: Vec<Item>) -> Self {
-        Self {
-            items,
-            selected: 0,
-        }
+        Self { items, selected: 0 }
     }
 
     pub fn run(&mut self) -> anyhow::Result<()> {
@@ -39,8 +41,8 @@ impl Ui {
                     KeyCode::Char('q') => break,
                     KeyCode::Char('o') => {
                         if let Some(item) = self.items.get(self.selected) {
-                         let _ = open::that(&item.url);
-                      }
+                            let _ = open::that(&item.url);
+                        }
                     }
 
                     KeyCode::Down => {
@@ -66,24 +68,11 @@ impl Ui {
     }
 
     fn draw(&self, f: &mut Frame) {
-        let items: Vec<ListItem> = self.items.iter().map(|i| {
-            let line = format!(
-                "[{:?}] ({}) {}",
-                i.source,
-                i.score.unwrap_or(0),
-                i.title
-            );
-            ListItem::new(line)
-        }).collect();
+        let chunks = create_layout(f);
 
-        let list = List::new(items)
-            .block(Block::default().title("RSS Hub").borders(Borders::ALL))
-            .highlight_style(Style::default().bg(Color::Blue).fg(Color::White).add_modifier(Modifier::BOLD))
-            .highlight_symbol(">> ");
-
-        let mut state = ListState::default();
-        state.select(Some(self.selected));
-
-        f.render_stateful_widget(list, f.size(), &mut state.clone());
+        header::render(f, chunks.header);
+        sidebar::render(f, chunks.sidebar);
+        main::render(f, chunks.main, &self.items, self.selected);
+        statusbar::render(f, chunks.status);
     }
 }
