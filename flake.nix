@@ -6,50 +6,42 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-      in
-      {
-        packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "rss-reader";
-          version = "0.1.0";
+outputs = { self, nixpkgs, flake-utils }:
+  flake-utils.lib.eachDefaultSystem (system:
+    let
+      pkgs = import nixpkgs { inherit system; };
+    in
+    {
+      packages.default = pkgs.rustPlatform.buildRustPackage {
+        pname = "rss-reader";
+        version = "0.1.0";
 
-          src = ./.;
+        src = ./.;
 
-          cargoLock = {
-            lockFile = ./Cargo.lock;
-          };
-
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
-
-          buildInputs = with pkgs; [
-            openssl
-            sqlite
-          ];
+        cargoLock = {
+          lockFile = ./Cargo.lock;
         };
 
-        apps.default = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.default;
-        };
+        nativeBuildInputs = [ pkgs.pkg-config ];
 
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            rustc
-            rust-analyzer
-            cargo
-            pkg-config
-            openssl
-            sqlite
-          ];
+        buildInputs = [ pkgs.openssl pkgs.sqlite ];
+      };
 
-          shellHook = ''
-            echo "Flake dev shell ready 🚀"
-          '';
-        };
-      }
-    );
+      apps.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/rss-reader";
+      };
+
+      devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+          rustc
+          rust-analyzer
+          cargo
+          pkg-config
+          openssl
+          sqlite
+        ];
+      };
+    }
+  );
 }
