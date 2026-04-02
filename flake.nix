@@ -12,17 +12,41 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "rss-reader";
+          version = "0.1.0";
+
+          src = ./.;
+
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+          ];
+
+          buildInputs = with pkgs; [
+            openssl
+            sqlite
+          ];
+        };
+
+        apps.default = flake-utils.lib.mkApp {
+          drv = self.packages.${system}.default;
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             rustc
             rust-analyzer
+            cargo
             pkg-config
             openssl
             sqlite
           ];
 
           shellHook = ''
-            #export RUST_BACKTRACE=1
             echo "Flake dev shell ready 🚀"
           '';
         };

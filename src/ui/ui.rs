@@ -122,14 +122,16 @@ impl Ui {
                     Mode::Filters => match key.code {
                         KeyCode::Char('q') => break,
                         KeyCode::Down | KeyCode::Char('j') => {
-                            self.filter = self.filter.saturating_add(1);
-
-                            self.selected = 0;
+                            if self.filter < self.sources.len() - 1 {
+                                self.filter = self.filter.saturating_add(1);
+                                self.selected = 0;
+                            }
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
-                            self.filter = self.filter.saturating_sub(1);
-
-                            self.selected = 0;
+                            if self.filter > 0 {
+                                self.filter = self.filter.saturating_sub(1);
+                                self.selected = 0;
+                            }
                         }
 
                         KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => {
