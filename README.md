@@ -103,19 +103,19 @@ On first run, the application creates a default config at:
 ### Example Configuration
 
 ```toml
-[[sources]]
+[[rss]]
 url = "https://feeds.arstechnica.com/arstechnica/index"
 tag = "Ars Technica"
 
-[[sources]]
+[[rss]]
 url = "http://rss.slashdot.org/Slashdot/slashdotMain"
 tag = "Slashdot"
 
-[[sources]]
+[[rss]]
 url = "https://blog.rust-lang.org/feed.xml"
 tag = "Rust Blog"
 
-[[sources]]
+[[rss]]
 url = "https://news.ycombinator.com/rss"
 tag = "Hacker News"
 ```
