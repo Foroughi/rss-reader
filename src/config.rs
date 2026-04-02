@@ -16,11 +16,11 @@ pub fn load_config() -> anyhow::Result<Config> {
     // if file doesn't exist → create with defaults
     if !path.exists() {
         let default_config = r#"
-[[sources]]
+[[rss]]
 url = "https://feeds.arstechnica.com/arstechnica/index"
 tag = "Ars Technica"
 
-[[sources]]
+[[rss]]
 url = "http://rss.slashdot.org/Slashdot/slashdotMain"
 tag = "Slashdot"
 "#;
