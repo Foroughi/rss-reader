@@ -17,11 +17,6 @@ A fast, terminal-based RSS/Atom feed reader built with Rust.
 
 ## Installation
 
-### Prerequisites
-
-- Rust 1.70+ (install via [rustup](https://rustup.rs/))
-- OpenSSL development libraries
-- SQLite development libraries
 
 ### Build from Source
 
