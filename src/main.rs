@@ -9,26 +9,18 @@ use services::aggregator::Aggregator;
 use sources::rss::RssSource;
 use ui::ui::Ui;
 
+use crate::config::load_config;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let config = load_config()?;
     let mut aggregator = Aggregator::new();
-
-    aggregator.add_source(RssSource {
-        url: "https://feeds.arstechnica.com/arstechnica/index".into(),
-        tag: Some("Ars Technica".into()),
-    });
-    aggregator.add_source(RssSource {
-        url: "http://rss.slashdot.org/Slashdot/slashdotMain".into(),
-        tag: Some("Slashdot".into()),
-    });
-    aggregator.add_source(RssSource {
-        url: "https://feeds.feedburner.com/TheHackersNews".into(),
-        tag: Some("The Hacker News".into()),
-    });
-    aggregator.add_source(RssSource {
-        url: "https://hnrss.org/frontpage".into(),
-        tag: Some("Hacker news".into()),
-    });
+    for source in config.rss {
+        aggregator.add_source(RssSource {
+            url: source.url,
+            tag: source.tag,
+        });
+    }
 
     let mut items = aggregator.fetch_all().await;
     items.sort_by(|a, b| b.created_at.cmp(&a.created_at));

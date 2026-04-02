@@ -1,11 +1,15 @@
-use crate::domain::item::Item;
+use crate::{domain::item::Item, ui::ui::Mode};
+use crossterm::style::style;
 use ratatui::{prelude::*, widgets::*};
-
-pub fn render(frame: &mut Frame, area: Rect, items: &[Item], selected: usize) {
+pub fn render(frame: &mut Frame, area: Rect, items: &[Item], selected: usize, filter: String) {
     let list_items: Vec<ListItem> = items
         .iter()
         .map(|i| {
-            let line = format!("{}", i.title);
+            let mut line = format!("{}", i.title);
+
+            if filter == "All" {
+                line = format!("[{}] {}", i.tags[0], i.title);
+            }
             ListItem::new(line)
         })
         .collect();

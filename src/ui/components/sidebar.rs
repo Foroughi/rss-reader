@@ -9,29 +9,29 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState},
 };
 
-pub fn render(frame: &mut Frame, area: Rect, items: &[Item], selected: usize) {
-    let mut set = std::collections::HashSet::new();
+pub fn render(frame: &mut Frame, area: Rect, items: &Vec<String>, selected: usize) {
+    // let mut set = std::collections::HashSet::new();
 
-    for item in items {
-        for tag in &item.tags {
-            set.insert(tag.clone());
-        }
-    }
+    // for item in items {
+    //     for tag in &item.tags {
+    //         set.insert(tag.clone());
+    //     }
+    // }
+    //
+    // let mut tags: Vec<String> = set.into_iter().collect();
+    // tags.sort();
+    // tags.insert(0, "All".to_string());
+    //
+    // let list_items: Vec<ListItem> = tags.iter().map(|t| ListItem::new(t.as_str())).collect();
 
-    let mut tags: Vec<String> = set.into_iter().collect();
-    tags.sort();
-    tags.insert(0, "All".to_string());
-
-    let list_items: Vec<ListItem> = tags.iter().map(|t| ListItem::new(t.as_str())).collect();
-
-    let list = List::new(list_items)
+    let list = List::new(items.clone())
         .block(Block::default().title("Feeds").borders(Borders::ALL))
         .highlight_style(
             Style::default()
-                .fg(Color::Yellow)
+                .fg(Color::Black)
+                .bg(Color::Blue)
                 .add_modifier(ratatui::style::Modifier::BOLD),
-        )
-        .highlight_symbol(">> ");
+        );
 
     let mut state = ListState::default();
     state.select(Some(selected));

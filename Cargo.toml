@@ -17,3 +17,6 @@ atom_syndication = "0.12"
 scraper = "0.20"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 html2text = "0.6"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+dirs = "5"

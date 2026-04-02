@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io;
 
 use crate::services::extract;
@@ -14,7 +15,7 @@ use crossterm::{
 use ratatui::{prelude::*, widgets::*};
 
 use crate::domain::item::Item;
-enum Mode {
+pub enum Mode {
     List,
     Detail,
     Filters,
@@ -22,6 +23,7 @@ enum Mode {
 
 pub struct Ui {
     items: Vec<Item>,
+    sources: Vec<String>,
     selected: usize,
     scroll: u16,
     filter: usize,
@@ -31,12 +33,25 @@ pub struct Ui {
 
 impl Ui {
     pub fn new(items: Vec<Item>) -> Self {
+        let mut set = std::collections::HashSet::new();
+
+        for item in items.clone() {
+            for tag in &item.tags {
+                set.insert(tag.clone());
+            }
+        }
+
+        let mut tags: Vec<String> = set.into_iter().collect();
+        tags.sort();
+        tags.insert(0, "All".to_string());
+
         Self {
             items,
             selected: 0,
-            mode: Mode::List,
+            mode: Mode::Filters,
             current_item: None,
             scroll: 0,
+            sources: tags,
             filter: 0,
         }
     }
@@ -67,7 +82,7 @@ impl Ui {
                                 let _ = open::that(&item.url);
                             }
                         }
-                        KeyCode::Esc => {
+                        KeyCode::Esc | KeyCode::Char('h') => {
                             self.mode = Mode::List;
                             self.scroll = 0;
                         }
@@ -86,14 +101,14 @@ impl Ui {
                             }
                         }
 
-                        KeyCode::Esc => {
+                        KeyCode::Char('h') | KeyCode::Left => {
                             self.mode = Mode::Filters;
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
                             self.selected = self.selected.saturating_sub(1);
                         }
 
-                        KeyCode::Enter => {
+                        KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => {
                             if let Some(item) = self.items.get(self.selected) {
                                 self.mode = Mode::Detail;
                                 self.scroll = 0;
@@ -108,13 +123,18 @@ impl Ui {
                         KeyCode::Char('q') => break,
                         KeyCode::Down | KeyCode::Char('j') => {
                             self.filter = self.filter.saturating_add(1);
+
+                            self.selected = 0;
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
                             self.filter = self.filter.saturating_sub(1);
+
+                            self.selected = 0;
                         }
 
-                        KeyCode::Enter => {
+                        KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => {
                             self.mode = Mode::List;
+                            self.selected = 0;
                         }
 
                         _ => {}
@@ -130,11 +150,19 @@ impl Ui {
 
     fn draw(&self, f: &mut Frame) {
         let chunks = create_layout(f);
+        let filter = self.sources[self.filter].clone();
+        let items: Vec<Item> = self
+            .items
+            .iter()
+            .filter(|item| filter == "All" || item.tags.contains(&filter))
+            .cloned()
+            .collect();
+
         header::render(f, chunks.header);
-        sidebar::render(f, chunks.sidebar, &self.items, self.filter);
+        sidebar::render(f, chunks.sidebar, &self.sources, self.filter);
         match self.mode {
             Mode::List => {
-                main::render(f, chunks.main, &self.items, self.selected);
+                main::render(f, chunks.main, &items, self.selected, filter);
             }
             Mode::Detail => {
                 if let Some(item) = &self.current_item {
@@ -142,7 +170,9 @@ impl Ui {
                 }
             }
 
-            Mode::Filters => {}
+            Mode::Filters => {
+                main::render(f, chunks.main, &items, self.selected, filter);
+            }
         }
 
         statusbar::render(f, chunks.status);
