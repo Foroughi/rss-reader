@@ -27,7 +27,9 @@ cargo build --release
 
 ### Using Nix
 
-This project uses Nix flakes for reproducible builds and development environments.
+```bash
+nix profile add github:Foroughi/rss-reader
+```
 
 #### Prerequisites
 
