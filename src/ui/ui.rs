@@ -56,6 +56,20 @@ impl Ui {
         }
     }
 
+    fn get_item_numbers(&mut self) -> usize {
+        let filter = self.sources[self.filter].clone();
+        let items: Vec<Item> = self
+            .items
+            .iter()
+            .filter(|item| {
+                filter == "All" || item.tags.contains(&self.sources[self.filter].clone())
+            })
+            .cloned()
+            .collect();
+
+        items.len()
+    }
+
     pub fn run(&mut self) -> anyhow::Result<()> {
         enable_raw_mode()?;
 
@@ -64,6 +78,7 @@ impl Ui {
 
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
+
         loop {
             terminal.draw(|f| self.draw(f))?;
 
@@ -93,7 +108,9 @@ impl Ui {
                     Mode::List => match key.code {
                         KeyCode::Char('q') => break,
                         KeyCode::Down | KeyCode::Char('j') => {
-                            self.selected = self.selected.saturating_add(1);
+                            if self.selected < self.get_item_numbers() - 1 {
+                                self.selected = self.selected.saturating_add(1);
+                            }
                         }
                         KeyCode::Char('o') => {
                             if let Some(item) = self.items.get(self.selected) {
@@ -105,7 +122,9 @@ impl Ui {
                             self.mode = Mode::Filters;
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
-                            self.selected = self.selected.saturating_sub(1);
+                            if self.selected > 0 {
+                                self.selected = self.selected.saturating_sub(1);
+                            }
                         }
 
                         KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => {
